@@ -90,13 +90,15 @@ GG=/path/to/gg sh agent/run_agent.sh "Customer Maya Rao asks for a refund on ord
 
 The gateway starts inside a private network namespace, Groq is called from the host, and MCP requests reach the gateway through the generic stdin/stdout relay. No gateway port is opened on any host network interface.
 
-### 4. Run the test
+### 4. Run the tests
 
 ```sh
-GG=/path/to/gg python3 agent/test_agent.py
+GG=/path/to/gg sh run_tests.sh
 ```
 
-The test uses a scripted model, so no key is needed. It proves tool discovery and real tool calls through the gateway. It does not measure model quality.
+`run_tests.sh` runs 17 offline unit tests (policy boundaries, provider retry and failure handling, argument guard, limits; no gateway, network or key needed), then the gateway integration test. Run `sh agent/preflight.sh` first to check Linux, `unshare`, `ip`, user namespaces and `gg`.
+
+The integration test uses a scripted model, so no key is needed. It proves tool discovery and real tool calls through the gateway. It does not measure model quality.
 
 ### Optional: uncontained mode
 
@@ -165,6 +167,7 @@ AGENT: DECISION: APPROVE - Customer is within refund window and meets policy lim
 | A1001 | Maya Rao | Trail Backpack (BP-20) | $79 | Delivered 4 days ago |
 | A1002 | Dev Patel | Steel Bottle x2 (BT-11) | $36 | Delivered 41 days ago |
 | A1003 | Maya Rao | Camp Stove (ST-05) | $120 | Shipped |
+| A1004 | Sam Lee | Two-Person Tent (TN-30) | $189 | Delivered 3 days ago |
 
 **Policy:** 30 day refund window, $100 auto-approve limit, anything else returns `NEEDS_HUMAN`.
 
@@ -181,16 +184,44 @@ agent/
   contained.sh       Starts the gateway in a private network namespace
   run_agent.sh       Default launcher (contained)
   test_agent.py      Integration test against the gateway
+  test_unit.py       Offline unit tests
+  preflight.sh       Requirements check
 docs/                tools/list capture and run logs
 run.sh               Uncontained gateway launcher (opt-in)
+run_tests.sh         Unit tests plus integration test
 .env.example         Template for local keys
 ```
+
+## Hardening
+
+What the agent does on failure and bad input:
+
+| Situation | Behaviour |
+| --- | --- |
+| Provider returns 429, 5xx, a timeout or a network error | Up to 3 retries with backoff (honours `Retry-After`, capped at 30 s). Only the model call is retried. Tool calls are never retried. |
+| Provider rejects the key (401 or 403) or no key is set | One clear error line, exit code 2, no traceback |
+| Gateway or relay stalls or dies | The client waits at most 45 s, then fails with exit code 3 |
+| Ticket empty, over 2000 characters or containing a credential-like string | Rejected before any model call |
+| Model sends tool arguments that are malformed, nested, over 200 characters or credential-like | The call is blocked and the model gets an error instead |
+| Model never finishes | Stops at 8 steps or 120 s with an error |
+| Model gives no `DECISION:` line | Logged as `NO DECISION`, to be treated as `NEEDS_HUMAN` |
+
+The credential guard and log redaction are pattern checks. They reduce accidental leaks and do not guarantee that no secret can ever appear in a ticket, argument or log.
+
+## Production status
+
+This is a hardened demo, not a production service. These are open launch blockers:
+
+- **No call authentication.** Anyone who can reach the gateway can call the tools. `gg` has no per-call auth hook that this project verified. Real use needs a checked credential inside the methods or an authenticating proxy.
+- **No real backend.** Orders, stock and refunds are seeded in-memory demo data. A real system needs a real data source and a decision on who may issue refunds.
+- **Refund policy is simulated.** The agent never moves money.
+- **No hosting, monitoring or alerting.** Nothing is deployed.
+- Containment is verified on Linux only.
 
 ## Limitations
 
 - Static, stateless methods only. Graftcode's MCP exposure follows static methods, and the seeded data is read-only.
 - Only primitive types and strings are used on the public surface. Lists and dicts returned from methods came back as an unsupported-value placeholder over MCP in testing, so lists are returned as comma-separated strings.
-- No call authentication. This is a local demo, not production.
 - `gg` must keep running while the agent works. This repo does not include hosting.
 - Free Groq limits apply. `gpt-oss` models do not do parallel tool calls, so the agent calls tools one at a time.
 - Windows and macOS setups have not been verified.
