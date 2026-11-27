@@ -41,6 +41,12 @@ def run_ticket(mcp, ticket, chat=groq_chat, max_steps=8, log=print):
 
 
 if __name__ == "__main__":
-    mcp = McpClient(os.environ.get("MCP_URL", "http://localhost:81/mcp"))
+    # Default: gateway runs in a private network namespace (contained.sh). Set MCP_URL only to use
+    # a gateway you started yourself; that gateway listens on all interfaces, see README.
+    if os.environ.get("MCP_URL"):
+        mcp = McpClient(os.environ["MCP_URL"])
+    else:
+        mcp = McpClient(relay_cmd=[os.path.join(os.path.dirname(os.path.abspath(__file__)), "contained.sh")])
     mcp.connect()
     run_ticket(mcp, " ".join(sys.argv[1:]) or "Customer wants a refund for order A1001.")
+    mcp.close()
