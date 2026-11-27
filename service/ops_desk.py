@@ -3,9 +3,10 @@
 _ORDERS = {
     "A1001": {"customer": "Maya Rao", "item": "Trail Backpack", "sku": "BP-20", "qty": 1, "total": 79, "status": "delivered", "days_since_delivery": 4},
     "A1002": {"customer": "Dev Patel", "item": "Steel Bottle", "sku": "BT-11", "qty": 2, "total": 36, "status": "delivered", "days_since_delivery": 41},
+    "A1004": {"customer": "Sam Lee", "item": "Two-Person Tent", "sku": "TN-30", "qty": 1, "total": 189, "status": "delivered", "days_since_delivery": 3},
     "A1003": {"customer": "Maya Rao", "item": "Camp Stove", "sku": "ST-05", "qty": 1, "total": 120, "status": "shipped", "days_since_delivery": 0},
 }
-_STOCK = {"BP-20": 14, "BT-11": 0, "ST-05": 3}
+_STOCK = {"BP-20": 14, "BT-11": 0, "ST-05": 3, "TN-30": 6}
 REFUND_AUTO_LIMIT = 100
 REFUND_WINDOW_DAYS = 30
 
