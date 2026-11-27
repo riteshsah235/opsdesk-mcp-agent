@@ -1,5 +1,7 @@
 """Generic MCP-over-HTTP client. Knows nothing about Ops Desk: it only speaks tools/list and tools/call."""
-import json, subprocess, urllib.request
+import json, select, subprocess, urllib.request
+
+RELAY_TIMEOUT = 45  # seconds to wait for one relayed reply
 
 
 class McpClient:
@@ -11,12 +13,21 @@ class McpClient:
 
     def close(self):
         if self.proc:
-            self.proc.stdin.close(); self.proc.wait(timeout=10)
+            try:
+                self.proc.stdin.close(); self.proc.wait(timeout=10)
+            except Exception:
+                self.proc.kill()
 
     def _post(self, body, h):
         if self.proc:
             self.proc.stdin.write(json.dumps({"body": body, "sid": self.sid}) + "\n"); self.proc.stdin.flush()
-            out = json.loads(self.proc.stdout.readline())
+            ready, _, _ = select.select([self.proc.stdout], [], [], RELAY_TIMEOUT)
+            if not ready:
+                raise RuntimeError("gateway relay timed out after %ds" % RELAY_TIMEOUT)
+            line = self.proc.stdout.readline()
+            if not line:
+                raise RuntimeError("gateway relay exited unexpectedly")
+            out = json.loads(line)
             if "error" in out:
                 raise RuntimeError(out["error"])
             self.sid = out.get("sid") or self.sid
