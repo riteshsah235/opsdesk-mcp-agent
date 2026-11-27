@@ -2,7 +2,7 @@
 
 # Ops Desk MCP Agent
 
-**An autonomous support-desk agent that works customer tickets by calling backend business logic as MCP tools, with zero MCP code written.**
+**An autonomous support-desk agent that works customer tickets by calling backend business logic as MCP tools, with no handwritten MCP server or tool wrappers.**
 
 ![Python](https://img.shields.io/badge/Python-3-3776AB?logo=python&logoColor=white)
 ![MCP](https://img.shields.io/badge/MCP-2025--06--18-6f42c1)
@@ -45,9 +45,9 @@ Built for the Build Verse hackathon (Tech4hack x Graftcode), track **PS11: AI Ag
 ## Architecture
 
 ```mermaid
-flowchart LR
+flowchart TB
     T[Ticket text] --> A["agent/agent.py<br/>LLM loop (Groq gpt-oss-20b)"]
-    A -- "tools/list, tools/call<br/>JSON-RPC" --> R["agent/relay.py<br/>stdin/stdout relay"]
+    A -- "tools/list, tools/call (JSON-RPC)" --> R["agent/relay.py<br/>stdin/stdout relay"]
     R --> G["Graftcode Gateway (gg)<br/>/mcp, generated"]
     G --> S["service/ops_desk.py<br/>class OpsDesk"]
     subgraph NS ["Private network namespace (unshare -rn)"]
@@ -136,7 +136,7 @@ Nothing is shared and no key is stored in this repository.
 | **Groq API key** (free) | [console.groq.com/keys](https://console.groq.com/keys), then Create API Key. Check your plan limits for `openai/gpt-oss-20b`. | `GROQ_API_KEY` in your local `.env` |
 | **GraftCode Project Key** | [portal.graftcode.com](https://portal.graftcode.com), then Settings, Project keys, Add new key (Personal). Format `username:token`, shown once. | `GC_PROJECT_KEY` in your local `.env` |
 
-- **Required for the hackathon demo:** the gateway also runs without a Project Key, but the Build Verse PS11 instructions require one. Create your own fresh key and run the gateway with it before demoing or submitting.
+- **Required for the hackathon demo:** the gateway runs locally without a Project Key (publishing to the Portal is optional at runtime), but the Build Verse PS11 instructions require one. Create your own fresh key and run the gateway with it before demoing or submitting.
 - The key used during development was **revoked and will not work**.
 - Remove a key from the Portal when you are done with it.
 - `.env` is listed in `.gitignore`. Never commit it.
