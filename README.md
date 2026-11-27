@@ -196,7 +196,7 @@ agent/
   contained.sh       Starts the gateway in a private network namespace
   run_agent.sh       Default launcher (contained)
   test_agent.py      Integration test against the gateway
-docs/                tools/list capture, run logs, Vision screenshot
+docs/                tools/list capture and run logs
 run.sh               Uncontained gateway launcher (opt-in)
 .env.example         Template for local keys
 ```
