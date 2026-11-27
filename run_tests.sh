@@ -4,3 +4,4 @@ set -eu
 cd "$(dirname "$0")"
 python3 agent/test_unit.py
 python3 agent/test_agent.py
+sh demo.sh --offline
