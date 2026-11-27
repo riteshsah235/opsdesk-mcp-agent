@@ -1,10 +1,30 @@
 """Generic MCP-over-HTTP client. Knows nothing about Ops Desk: it only speaks tools/list and tools/call."""
-import json, urllib.request
+import json, subprocess, urllib.request
 
 
 class McpClient:
-    def __init__(self, url):
+    def __init__(self, url=None, relay_cmd=None):
+        """url: plain HTTP endpoint. relay_cmd: argv of a process that relays JSON lines to the
+        gateway from inside a private network namespace (see contained.sh)."""
         self.url, self.sid, self._id = url, None, 0
+        self.proc = subprocess.Popen(relay_cmd, stdin=subprocess.PIPE, stdout=subprocess.PIPE, text=True) if relay_cmd else None
+
+    def close(self):
+        if self.proc:
+            self.proc.stdin.close(); self.proc.wait(timeout=10)
+
+    def _post(self, body, h):
+        if self.proc:
+            self.proc.stdin.write(json.dumps({"body": body, "sid": self.sid}) + "\n"); self.proc.stdin.flush()
+            out = json.loads(self.proc.stdout.readline())
+            if "error" in out:
+                raise RuntimeError(out["error"])
+            self.sid = out.get("sid") or self.sid
+            return out["data"]
+        req = urllib.request.Request(self.url, json.dumps(body).encode(), h)
+        with urllib.request.urlopen(req, timeout=20) as r:
+            self.sid = r.headers.get("Mcp-Session-Id") or self.sid
+            return r.read().decode()
 
     def _rpc(self, method, params=None, notify=False):
         body = {"jsonrpc": "2.0", "method": method}
@@ -16,10 +36,7 @@ class McpClient:
         h = {"Content-Type": "application/json", "Accept": "application/json, text/event-stream"}
         if self.sid:
             h["Mcp-Session-Id"] = self.sid
-        req = urllib.request.Request(self.url, json.dumps(body).encode(), h)
-        with urllib.request.urlopen(req, timeout=20) as r:
-            self.sid = r.headers.get("Mcp-Session-Id") or self.sid
-            data = r.read().decode()
+        data = self._post(body, h)
         if notify or not data.strip():
             return None
         msg = json.loads(data)
