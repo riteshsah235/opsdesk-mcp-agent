@@ -70,6 +70,16 @@ def groq_chat(messages, tools, model=None, opener=urllib.request.urlopen, sleep=
     raise AgentError("Model provider unavailable after %d retries (%s). Try again later." % (MAX_RETRIES, last))
 
 
+def parse_decision(text):
+    """Return (decision, reason) from the last 'DECISION: X - reason' line, or None."""
+    found = None
+    for line in str(text or "").splitlines():
+        m = re.search(r"DECISION:\s*(APPROVE|NEEDS_HUMAN|DENY|INFO)\b\s*[-:]?\s*(.*)", line)
+        if m:
+            found = (m.group(1), m.group(2).strip())
+    return found
+
+
 def to_llm_tools(mcp_tools):
     return [{"type": "function", "function": {"name": t["name"], "description": t.get("description", ""),
              "parameters": t["inputSchema"]}} for t in mcp_tools]
@@ -138,7 +148,12 @@ def main(argv):
         mcp = McpClient(relay_cmd=["sh", os.path.join(os.path.dirname(os.path.abspath(__file__)), "contained.sh")])
     try:
         mcp.connect()
-        run_ticket(mcp, ticket)
+        out = run_ticket(mcp, ticket)
+        d = parse_decision(out)
+        if d is None:
+            print("RESULT: NO DECISION (treat this ticket as NEEDS_HUMAN)")
+            return 4
+        print("RESULT: %s | %s" % d)
         return 0
     except AgentError as e:
         print("ERROR: " + redact(e), file=sys.stderr)
