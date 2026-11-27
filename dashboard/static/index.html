@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="token" content="__TOKEN__">
+<title>Ops Desk</title>
+<link rel="stylesheet" href="/style.css">
+</head>
+<body>
+<header class="top">
+  <div class="brand"><span class="mark" aria-hidden="true"></span><h1>Ops Desk</h1></div>
+  <p class="sub">An AI agent handles a refund ticket by calling backend tools. Every step below is a real call through the Graftcode gateway. Data is simulated and no money moves.</p>
+</header>
+<main class="grid">
+  <section class="panel" aria-labelledby="t-h">
+    <h2 id="t-h">Ticket</h2>
+    <div class="samples" id="samples" role="group" aria-label="Sample tickets"></div>
+    <label class="sr" for="ticket">Ticket text</label>
+    <textarea id="ticket" rows="4" maxlength="2000" placeholder="e.g. Customer Maya Rao asks for a refund on order A1001."></textarea>
+    <fieldset class="modes">
+      <legend>Model</legend>
+      <label class="mode"><input type="radio" name="mode" value="scripted" checked><span><b>Scripted</b><small>No key, no network. A fixed script calls the tools and repeats the backend's answer. Tests the gateway path, not model quality.</small></span></label>
+      <label class="mode" id="live-label"><input type="radio" name="mode" value="live"><span><b>Live model</b><small id="live-note">Groq model decides which tools to call.</small></span></label>
+    </fieldset>
+    <button id="run" class="primary" type="button">Run ticket</button>
+    <p class="hint" id="hint"></p>
+    <h3>Tools discovered from the gateway</h3>
+    <ul class="tools" id="tools"></ul>
+  </section>
+  <section class="panel" aria-labelledby="r-h" aria-live="polite">
+    <h2 id="r-h">Result</h2>
+    <div id="empty" class="empty">Pick a sample ticket and run it. The decision and the tool calls behind it appear here.</div>
+    <div id="out" hidden>
+      <div id="decision" class="decision">
+        <span class="badge" id="badge"></span>
+        <p id="reason"></p>
+        <p class="meta" id="meta"></p>
+      </div>
+      <h3>Tool calls</h3>
+      <ol class="trace" id="trace"></ol>
+    </div>
+    <div id="err" class="error" role="alert" hidden></div>
+  </section>
+</main>
+<footer class="foot">Local only (127.0.0.1). Refunds are simulated. Hardened demo, not a production service.</footer>
+<script src="/app.js"></script>
+</body>
+</html>
