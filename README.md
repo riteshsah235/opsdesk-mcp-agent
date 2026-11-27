@@ -1,24 +1,4 @@
-# Ops Desk MCP Agent
-
-An autonomous support-desk agent that works a customer ticket by calling backend business logic **as MCP tools**.
-The backend is a plain Python class. There is **no MCP server code, no tool definitions, no schemas and no API wrapper in this repo**.
-[Graftcode Gateway](https://docs.graftcode.com) hosts the module and exposes its public static methods at `/mcp` automatically.
-The agent is a generic MCP client plus an LLM: it discovers the tools at run time and decides what to call.
-
-Built for the Build Verse hackathon (Tech4hack x Graftcode), track **PS11: AI Agents & MCP**.
-
-## How it works
-
-```
- ticket text
-     |
-     v
- agent/agent.py  --(LLM: Groq gpt-oss-20b, tool calling)-->  decides next tool
-     |  tools/list, tools/call (JSON-RPC over HTTP, agent/mcp_client.py, knows nothing about Ops Desk)
-     v
- Graftcode Gateway (gg)  :81/mcp   <-- generated from the module, no code written by us
-     |
-     v
+<div align="center">
 
 # Ops Desk MCP Agent
 
