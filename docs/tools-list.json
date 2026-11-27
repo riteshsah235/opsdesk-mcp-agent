@@ -1,0 +1,148 @@
+{
+  "result": {
+    "tools": [
+      {
+        "name": "get_order",
+        "title": "Get order",
+        "description": "Static method ops_desk.OpsDesk.get_order",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "order_id": {
+              "type": [
+                "string",
+                "integer",
+                "number"
+              ]
+            }
+          },
+          "required": [
+            "order_id"
+          ]
+        },
+        "outputSchema": {
+          "type": "object",
+          "properties": {
+            "value": {
+              "type": [
+                "string",
+                "integer",
+                "number"
+              ]
+            }
+          },
+          "required": [
+            "value"
+          ]
+        }
+      },
+      {
+        "name": "list_customer_orders",
+        "title": "List customer orders",
+        "description": "Static method ops_desk.OpsDesk.list_customer_orders",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "customer": {
+              "type": [
+                "string",
+                "integer",
+                "number"
+              ]
+            }
+          },
+          "required": [
+            "customer"
+          ]
+        },
+        "outputSchema": {
+          "type": "object",
+          "properties": {
+            "value": {
+              "type": [
+                "string",
+                "integer",
+                "number"
+              ]
+            }
+          },
+          "required": [
+            "value"
+          ]
+        }
+      },
+      {
+        "name": "check_stock",
+        "title": "Check stock",
+        "description": "Units in stock for a SKU such as BP-20 (SKUs come from get_order). Unknown SKU returns an explicit error.",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "sku": {
+              "type": [
+                "string",
+                "integer",
+                "number"
+              ]
+            }
+          },
+          "required": [
+            "sku"
+          ]
+        },
+        "outputSchema": {
+          "type": "object",
+          "properties": {
+            "value": {
+              "type": [
+                "string",
+                "integer",
+                "number"
+              ]
+            }
+          },
+          "required": [
+            "value"
+          ]
+        }
+      },
+      {
+        "name": "evaluate_refund",
+        "title": "Evaluate refund",
+        "description": "Returns the policy decision for a refund: APPROVE, NEEDS_HUMAN, or DENY, with the reason.",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "order_id": {
+              "type": [
+                "string",
+                "integer",
+                "number"
+              ]
+            }
+          },
+          "required": [
+            "order_id"
+          ]
+        },
+        "outputSchema": {
+          "type": "object",
+          "properties": {
+            "value": {
+              "type": [
+                "string",
+                "integer",
+                "number"
+              ]
+            }
+          },
+          "required": [
+            "value"
+          ]
+        }
+      }
+    ]
+  },
+  "jsonrpc": "2.0",
+  "id": 2
+}
