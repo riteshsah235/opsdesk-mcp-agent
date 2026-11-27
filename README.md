@@ -117,7 +117,7 @@ Boundaries: the server binds `127.0.0.1` only (there is no option to listen else
 GG=/path/to/gg sh run_tests.sh
 ```
 
-`run_tests.sh` runs 21 offline unit tests (policy boundaries, provider retry and failure handling, argument guard, limits; no gateway, network or key needed), then 16 dashboard tests (browser-facing boundaries, plus a real-gateway run), then the gateway integration test and the offline demo. Run `sh agent/preflight.sh` first to check Linux, `unshare`, `ip`, user namespaces and `gg`.
+`run_tests.sh` runs 21 offline unit tests (policy boundaries, provider retry and failure handling, argument guard, limits; no gateway, network or key needed), then 2 environment tests (the gateway never receives the Groq key), then 16 dashboard tests (browser-facing boundaries, plus a real-gateway run), then the gateway integration test and the offline demo. Run `sh agent/preflight.sh` first to check Linux, `unshare`, `ip`, user namespaces and `gg`.
 
 The integration test uses a scripted model, so no key is needed. It proves tool discovery and real tool calls through the gateway. It does not measure model quality.
 
@@ -206,6 +206,7 @@ agent/
   run_agent.sh       Default launcher (contained)
   test_agent.py      Integration test against the gateway
   test_unit.py       Offline unit tests
+  test_env.py        Gateway environment tests (names only)
   demo.py            Four-order demo table (live or --offline)
   preflight.sh       Requirements check with a fix line per problem
 dashboard/           Local dashboard: server.py, static page, test_dashboard.py
@@ -230,6 +231,7 @@ What the agent does on failure and bad input:
 | Model sends tool arguments that are malformed, nested, over 200 characters or credential-like | The call is blocked and the model gets an error instead |
 | Model never finishes | Stops at 8 steps or a 120 s total budget with an error. The same deadline caps provider retries, backoff and gateway waits. A single blocking read is not force-killed, so it can run until the time left runs out. |
 | Model gives no `DECISION:` line | Logged as `NO DECISION`, to be treated as `NEEDS_HUMAN` |
+| Gateway process environment (contained mode) | The Groq key and model name are removed before the private network namespace starts, and `gg` starts with a minimal environment: `PATH`, `HOME`, `TMPDIR`, `LANG`, `LD_LIBRARY_PATH` and, only if you set it, `GC_PROJECT_KEY`. `agent/test_env.py` checks variable names only (never values). |
 
 The credential guard and log redaction are pattern checks. They reduce accidental leaks and do not guarantee that no secret can ever appear in a ticket, argument or log.
 
