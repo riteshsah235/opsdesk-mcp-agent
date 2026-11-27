@@ -1,0 +1,6 @@
+### Customer Maya Rao asks for a refund on order A1001. Decide.
+TOOL evaluate_refund({"order_id": "A1001"}) -> APPROVE: within window and limit
+AGENT: DECISION: APPROVE - Customer is within refund window and meets policy limits.
+### Refund request for order A1002, customer says the item is faulty. Decide.
+TOOL evaluate_refund({"order_id": "A1002"}) -> DENY: outside 30 day refund window
+AGENT: DECISION: DENY - outside 30 day refund window
