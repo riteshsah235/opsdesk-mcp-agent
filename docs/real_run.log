@@ -1,0 +1,23 @@
+### TICKET: Customer Maya Rao asks for a refund on order A1001. Decide.
+TOOL evaluate_refund({"order_id": "A1001"}) -> APPROVE: within window and limit
+AGENT: DECISION: APPROVE - Customer is within refund window and meets policy limits.
+### TICKET: Dev Patel wants a refund for order A1002 because the bottle leaks. Also is the Steel Bottle back in stock?
+TOOL get_order({"order_id": "A1002"}) -> A1002 | customer=Dev Patel | item=Steel Bottle x2 | sku=BT-11 | total=$36 | status=delivered | days_since_delivery=41
+TOOL evaluate_refund({"order_id": "A1002"}) -> DENY: outside 30 day refund window
+TOOL check_stock({"sku": "BT-11"}) -> BT-11: 0 units in stock
+AGENT: The refund request for order A1002 is denied because it is outside the 30‑day refund window. The Steel Bottle (SKU BT‑11) is currently out of stock.  
+
+DECISION: DENY - outside 30 day refund window
+### TICKET: List all orders for Maya Rao and tell me which are refundable.
+TOOL list_customer_orders({"customer": "Maya Rao"}) -> A1001,A1003
+TOOL evaluate_refund({"order_id": "A1001"}) -> APPROVE: within window and limit
+TOOL evaluate_refund({"order_id": "A1003"}) -> DENY: order not delivered yet
+AGENT: Orders for Maya Rao:
+- A1001 – Refundable (APPROVE)
+- A1003 – Not refundable (DENY)
+
+DECISION: INFO - Provided order list and refund status.
+### TICKET: Is SKU ZZ-99 in stock?
+TOOL check_stock({"sku": "ZZ-99"}) -> ERROR: unknown sku 'ZZ-99' (use the sku field from get_order)
+AGENT: I’m sorry, but SKU ZZ-99 is not recognized in our system.  
+DECISION: INFO - SKU not found.
