@@ -115,3 +115,12 @@ docs/                   tools/list capture, real run log, Vision screenshot
 - If the files are not executable after cloning, run `chmod +x run.sh agent/run_agent.sh` or call them with `sh`.
 - `GC_PROJECT_KEY` is optional. Create your own fresh Project Key in the Graftcode Portal if you want publication; keys used during development were revoked and are not in this repo.
 - `GROQ_API_KEY` goes only in your local `.env` (git-ignored).
+
+## Containment (what is and is not enforced)
+- `./test_isolated.sh` runs the gateway and `agent/test_agent.py` in a private network namespace (`unshare -rn`). Tested on Linux: the gateway listeners were not visible on the host and the test passed. It has no internet, so it does not call Groq.
+- The full LLM run (`agent/run_agent.sh`) needs both the gateway and internet, so it cannot use that namespace. For it, gg still listens on 0.0.0.0. Not tested here: a container with `-p 127.0.0.1:81:81` publishing only on loopback. Otherwise use a firewall and a trusted network. Do not claim this setup is local-only.
+
+## Create your own keys (nothing is shared)
+- **Groq (free):** sign in at https://console.groq.com/keys, click Create API Key, copy it once into your local `.env` as `GROQ_API_KEY`. Check your plan limits for `openai/gpt-oss-20b`.
+- **GraftCode Project Key (optional):** in https://portal.graftcode.com > Settings > Project keys, add a Personal key and put it in `.env` as `GC_PROJECT_KEY`. Remove it from the Portal when done.
+- Never commit `.env`; it is in `.gitignore`.
