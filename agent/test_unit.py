@@ -132,5 +132,32 @@ class Loop(unittest.TestCase):
         self.assertEqual(agent.redact("A1001 | Maya Rao | $79"), "A1001 | Maya Rao | $79")
 
 
+class DemoOutput(unittest.TestCase):
+    def test_parse_decision(self):
+        self.assertEqual(agent.parse_decision("x\nDECISION: DENY - outside 30 day refund window"), ("DENY", "outside 30 day refund window"))
+        self.assertEqual(agent.parse_decision("DECISION: NEEDS_HUMAN: total above auto limit"), ("NEEDS_HUMAN", "total above auto limit"))
+        self.assertIsNone(agent.parse_decision("I cannot comply."))
+        self.assertIsNone(agent.parse_decision(None))
+        self.assertEqual(agent.parse_decision("DECISION: APPROVE - a\nDECISION: DENY - b")[0], "DENY")
+
+    def test_scripted_chat_repeats_tool_result_only(self):
+        import demo
+        chat = demo.scripted_chat_for("A1004")
+        self.assertEqual(chat([], [])["tool_calls"][0]["function"]["name"], "get_order")
+        self.assertEqual(chat([], [])["tool_calls"][0]["function"]["name"], "evaluate_refund")
+        msgs = [{"role": "tool", "content": "NEEDS_HUMAN: total above auto limit"}]
+        self.assertEqual(chat(msgs, [])["content"], "DECISION: NEEDS_HUMAN - total above auto limit")
+
+    def test_render_flags_mismatch(self):
+        import demo
+        rows = [{"order": "A1", "expected": "DENY", "decision": "DENY", "reason": "r", "tools": ["get_order"]},
+                {"order": "A2", "expected": "APPROVE", "decision": "DENY", "reason": "r", "tools": []}]
+        text, ok = demo.render(rows, "test")
+        self.assertFalse(ok)
+        self.assertIn("1 of 2 decisions match", text)
+        self.assertIn("NO", text)
+        self.assertTrue(demo.render(rows[:1], "test")[1])
+
+
 if __name__ == "__main__":
     unittest.main(verbosity=1)
