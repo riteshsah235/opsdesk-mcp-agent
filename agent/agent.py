@@ -31,7 +31,7 @@ def _sleep(s):
     time.sleep(s)
 
 
-def groq_chat(messages, tools, model=None, opener=urllib.request.urlopen, sleep=_sleep):
+def groq_chat(messages, tools, model=None, opener=urllib.request.urlopen, sleep=_sleep, deadline=None, clock=time.monotonic):
     key = os.environ.get("GROQ_API_KEY", "").strip()
     if not key:
         raise AgentError("GROQ_API_KEY is not set. Copy .env.example to .env and add your key.")
@@ -40,11 +40,15 @@ def groq_chat(messages, tools, model=None, opener=urllib.request.urlopen, sleep=
     data = json.dumps(body).encode()
     headers = {"Content-Type": "application/json", "Authorization": "Bearer " + key, "User-Agent": "opsdesk-agent/1.1"}
     last = "unknown error"
+    def left():
+        return None if deadline is None else deadline - clock()
     for attempt in range(MAX_RETRIES + 1):
+        if left() is not None and left() <= 0:
+            raise AgentError("Stopped: time budget exceeded while waiting for the model provider.")
         req = urllib.request.Request("https://api.groq.com/openai/v1/chat/completions", data, headers)
         wait = min(2 ** attempt, 8)
         try:
-            with opener(req, timeout=60) as r:
+            with opener(req, timeout=60 if left() is None else max(1, min(60, left()))) as r:
                 return json.load(r)["choices"][0]["message"]
         except urllib.error.HTTPError as e:
             if e.code in (401, 403):
@@ -60,6 +64,8 @@ def groq_chat(messages, tools, model=None, opener=urllib.request.urlopen, sleep=
         except (KeyError, IndexError, ValueError):
             raise AgentError("Model provider returned an unexpected response.")
         if attempt < MAX_RETRIES:
+            if left() is not None and wait >= left():
+                raise AgentError("Stopped: time budget exceeded while retrying the model provider (%s)." % last)
             sleep(wait)
     raise AgentError("Model provider unavailable after %d retries (%s). Try again later." % (MAX_RETRIES, last))
 
@@ -92,12 +98,15 @@ def run_ticket(mcp, ticket, chat=groq_chat, max_steps=MAX_STEPS, log=print, max_
     if SECRET_RE.search(ticket):
         raise AgentError("Ticket looks like it contains a credential. Remove it and try again.")
     start = clock()
+    deadline = start + max_seconds
+    if clock is time.monotonic:
+        mcp.deadline = deadline  # lets the MCP client cap each relay wait at the time left
     tools = to_llm_tools(mcp.list_tools())
     msgs = [{"role": "system", "content": SYSTEM}, {"role": "user", "content": ticket}]
     for _ in range(max_steps):
         if clock() - start > max_seconds:
             raise AgentError("Stopped: time budget of %ds exceeded." % max_seconds)
-        m = chat(msgs, tools)
+        m = chat(msgs, tools, deadline=deadline) if chat is groq_chat else chat(msgs, tools)
         msgs.append({k: v for k, v in m.items() if v is not None})
         calls = m.get("tool_calls") or []
         if not calls:
