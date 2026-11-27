@@ -50,7 +50,7 @@ Requirements: Linux x86_64 or macOS/Windows per Graftcode docs, Python 3, an LLM
 2. **Configure**:
    ```sh
    cp .env.example .env
-   # edit .env: GROQ_API_KEY (https://console.groq.com/keys), optional GC_PROJECT_KEY
+   # edit .env: GROQ_API_KEY (https://console.groq.com/keys), GC_PROJECT_KEY (required for the hackathon demo, see "Create your own keys")
    ```
    Project Key: sign up at https://portal.graftcode.com, Settings > Project keys > Add new key (Personal). Format `username:token`. It is shown once.
 3. **Run the agent (default, contained).** The gateway starts automatically inside a private Linux network namespace (`unshare -rn`, needs `unshare` and `ip`, Linux only). Groq is called from the host; MCP requests reach the gateway through a generic stdin/stdout relay (`agent/relay.py`), so no gateway port is open on any host network interface.
@@ -109,7 +109,7 @@ docs/                   tools/list capture, real run log, Vision screenshot
 
 ## Notes
 - If the files are not executable after cloning, run `chmod +x run.sh agent/run_agent.sh` or call them with `sh`.
-- `GC_PROJECT_KEY` is optional. Create your own fresh Project Key in the Graftcode Portal if you want publication; keys used during development were revoked and are not in this repo.
+- `GC_PROJECT_KEY`: the gateway runs without it, but the Build Verse event requires a GraftCode Project Key, so create your own fresh one in the Graftcode Portal before demoing or submitting. The key used during development was revoked and does not work.
 - `GROQ_API_KEY` goes only in your local `.env` (git-ignored).
 
 ## Containment (what is and is not enforced)
@@ -119,5 +119,6 @@ docs/                   tools/list capture, real run log, Vision screenshot
 
 ## Create your own keys (nothing is shared)
 - **Groq (free):** sign in at https://console.groq.com/keys, click Create API Key, copy it once into your local `.env` as `GROQ_API_KEY`. Check your plan limits for `openai/gpt-oss-20b`.
-- **GraftCode Project Key (optional):** in https://portal.graftcode.com > Settings > Project keys, add a Personal key and put it in `.env` as `GC_PROJECT_KEY`. Remove it from the Portal when done.
+- **GraftCode Project Key (required for the hackathon demonstration):** the gateway also runs without one, but the Build Verse PS11 instructions require a GraftCode Project Key, so create your own and run the gateway with it before demoing or submitting. The key used during development was revoked and will not work.
+- **GraftCode Project Key steps:** in https://portal.graftcode.com > Settings > Project keys, add a Personal key and put it in `.env` as `GC_PROJECT_KEY`. Remove it from the Portal when done.
 - Never commit `.env`; it is in `.gitignore`.
