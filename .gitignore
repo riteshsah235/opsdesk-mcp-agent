@@ -1,0 +1,9 @@
+.env
+*.key
+.graftcode/
+gg
+gg.deb
+ggroot/
+__pycache__/
+*.log
+!docs/*.log
