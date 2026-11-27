@@ -55,7 +55,7 @@ Requirements: Linux x86_64 or macOS/Windows per Graftcode docs, Python 3, an LLM
    Project Key: sign up at https://portal.graftcode.com, Settings > Project keys > Add new key (Personal). Format `username:token`. It is shown once.
 3. **Run the agent (default, contained).** The gateway starts automatically inside a private Linux network namespace (`unshare -rn`, needs `unshare` and `ip`, Linux only). Groq is called from the host; MCP requests reach the gateway through a generic stdin/stdout relay (`agent/relay.py`), so no gateway port is open on any host network interface.
    ```sh
-   GG=/path/to/gg ./agent/run_agent.sh "Customer Maya Rao asks for a refund on order A1001. Decide."
+   GG=/path/to/gg sh agent/run_agent.sh "Customer Maya Rao asks for a refund on order A1001. Decide."
    ```
 4. **Test** (scripted model, no key needed, same contained gateway):
    ```sh
