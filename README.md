@@ -90,13 +90,24 @@ GG=/path/to/gg sh agent/run_agent.sh "Customer Maya Rao asks for a refund on ord
 
 The gateway starts inside a private network namespace, Groq is called from the host, and MCP requests reach the gateway through the generic stdin/stdout relay. No gateway port is opened on any host network interface.
 
-### 4. Run the tests
+### 4. One-command demo
+
+```sh
+GG=/path/to/gg sh demo.sh            # live model, needs GROQ_API_KEY in .env
+GG=/path/to/gg sh demo.sh --offline  # no key, scripted model
+```
+
+Both run the four sample orders through the contained gateway and print one table: decision, expected decision, tools called and reason. The agent also ends every run with a `RESULT: <decision> | <reason>` line, and exits 4 with `RESULT: NO DECISION` if the model gave none (treat that ticket as `NEEDS_HUMAN`). `demo.sh` exits 0 when all four match, 5 on a mismatch.
+
+`--offline` uses a scripted stand-in for the model that only calls the tools and repeats the tool result. It checks the gateway and tool path, not model quality. The live run is the model-in-the-loop check.
+
+### 5. Run the tests
 
 ```sh
 GG=/path/to/gg sh run_tests.sh
 ```
 
-`run_tests.sh` runs 18 offline unit tests (policy boundaries, provider retry and failure handling, argument guard, limits; no gateway, network or key needed), then the gateway integration test. Run `sh agent/preflight.sh` first to check Linux, `unshare`, `ip`, user namespaces and `gg`.
+`run_tests.sh` runs 21 offline unit tests (policy boundaries, provider retry and failure handling, argument guard, limits; no gateway, network or key needed), then the gateway integration test and the offline demo. Run `sh agent/preflight.sh` first to check Linux, `unshare`, `ip`, user namespaces and `gg`.
 
 The integration test uses a scripted model, so no key is needed. It proves tool discovery and real tool calls through the gateway. It does not measure model quality.
 
@@ -185,9 +196,11 @@ agent/
   run_agent.sh       Default launcher (contained)
   test_agent.py      Integration test against the gateway
   test_unit.py       Offline unit tests
-  preflight.sh       Requirements check
+  demo.py            Four-order demo table (live or --offline)
+  preflight.sh       Requirements check with a fix line per problem
 docs/                tools/list capture and run logs
 run.sh               Uncontained gateway launcher (opt-in)
+demo.sh              One-command demo
 run_tests.sh         Unit tests plus integration test
 .env.example         Template for local keys
 ```
