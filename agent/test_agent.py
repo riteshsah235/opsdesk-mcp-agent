@@ -4,8 +4,11 @@ import json, os, sys
 from mcp_client import McpClient
 from agent import run_ticket
 
-url = os.environ["MCP_URL"]
-mcp = McpClient(url); mcp.connect()
+if os.environ.get("MCP_URL"):
+    mcp = McpClient(os.environ["MCP_URL"])
+else:  # default: gateway in a private network namespace, requests relayed over stdin/stdout
+    mcp = McpClient(relay_cmd=[os.path.join(os.path.dirname(os.path.abspath(__file__)), "contained.sh")])
+mcp.connect()
 names = sorted(t["name"] for t in mcp.list_tools())
 assert names == ["check_stock", "evaluate_refund", "get_order", "list_customer_orders"], names
 
