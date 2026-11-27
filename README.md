@@ -96,7 +96,7 @@ The gateway starts inside a private network namespace, Groq is called from the h
 GG=/path/to/gg sh run_tests.sh
 ```
 
-`run_tests.sh` runs 17 offline unit tests (policy boundaries, provider retry and failure handling, argument guard, limits; no gateway, network or key needed), then the gateway integration test. Run `sh agent/preflight.sh` first to check Linux, `unshare`, `ip`, user namespaces and `gg`.
+`run_tests.sh` runs 18 offline unit tests (policy boundaries, provider retry and failure handling, argument guard, limits; no gateway, network or key needed), then the gateway integration test. Run `sh agent/preflight.sh` first to check Linux, `unshare`, `ip`, user namespaces and `gg`.
 
 The integration test uses a scripted model, so no key is needed. It proves tool discovery and real tool calls through the gateway. It does not measure model quality.
 
@@ -203,7 +203,7 @@ What the agent does on failure and bad input:
 | Gateway or relay stalls or dies | The client waits at most 45 s, then fails with exit code 3 |
 | Ticket empty, over 2000 characters or containing a credential-like string | Rejected before any model call |
 | Model sends tool arguments that are malformed, nested, over 200 characters or credential-like | The call is blocked and the model gets an error instead |
-| Model never finishes | Stops at 8 steps or 120 s with an error |
+| Model never finishes | Stops at 8 steps or a 120 s total budget with an error. The same deadline caps provider retries, backoff and gateway waits. A single blocking read is not force-killed, so it can run until the time left runs out. |
 | Model gives no `DECISION:` line | Logged as `NO DECISION`, to be treated as `NEEDS_HUMAN` |
 
 The credential guard and log redaction are pattern checks. They reduce accidental leaks and do not guarantee that no secret can ever appear in a ticket, argument or log.
