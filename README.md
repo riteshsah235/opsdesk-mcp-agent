@@ -14,21 +14,6 @@
 
 ---
 
-## Table of contents
-
-1. [Overview](#overview)
-2. [Architecture](#architecture)
-3. [How Graftcode is used](#how-graftcode-is-used)
-4. [Quick start](#quick-start)
-5. [Create your own keys](#create-your-own-keys)
-6. [Containment and security](#containment-and-security)
-7. [Sample run](#sample-run)
-8. [Demo data and policy](#demo-data-and-policy)
-9. [Project layout](#project-layout)
-10. [Limitations](#limitations)
-
----
-
 ## Overview
 
 Ops Desk reads a customer ticket, looks up the order, checks stock and decides whether a refund is allowed.
