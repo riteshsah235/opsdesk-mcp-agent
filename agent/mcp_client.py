@@ -1,5 +1,5 @@
 """Generic MCP-over-HTTP client. Knows nothing about Ops Desk: it only speaks tools/list and tools/call."""
-import json, select, subprocess, urllib.request
+import json, select, subprocess, time, urllib.request
 
 RELAY_TIMEOUT = 45  # seconds to wait for one relayed reply
 
@@ -8,7 +8,7 @@ class McpClient:
     def __init__(self, url=None, relay_cmd=None):
         """url: plain HTTP endpoint. relay_cmd: argv of a process that relays JSON lines to the
         gateway from inside a private network namespace (see contained.sh)."""
-        self.url, self.sid, self._id = url, None, 0
+        self.url, self.sid, self._id, self.deadline = url, None, 0, None
         self.proc = subprocess.Popen(relay_cmd, stdin=subprocess.PIPE, stdout=subprocess.PIPE, text=True) if relay_cmd else None
 
     def close(self):
@@ -21,9 +21,10 @@ class McpClient:
     def _post(self, body, h):
         if self.proc:
             self.proc.stdin.write(json.dumps({"body": body, "sid": self.sid}) + "\n"); self.proc.stdin.flush()
-            ready, _, _ = select.select([self.proc.stdout], [], [], RELAY_TIMEOUT)
+            wait = RELAY_TIMEOUT if self.deadline is None else max(0.1, min(RELAY_TIMEOUT, self.deadline - time.monotonic()))
+            ready, _, _ = select.select([self.proc.stdout], [], [], wait)
             if not ready:
-                raise RuntimeError("gateway relay timed out after %ds" % RELAY_TIMEOUT)
+                raise RuntimeError("gateway relay timed out after %ds" % wait)
             line = self.proc.stdout.readline()
             if not line:
                 raise RuntimeError("gateway relay exited unexpectedly")
