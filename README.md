@@ -101,13 +101,23 @@ Both run the four sample orders through the contained gateway and print one tabl
 
 `--offline` uses a scripted stand-in for the model that only calls the tools and repeats the tool result. It checks the gateway and tool path, not model quality. The live run is the model-in-the-loop check.
 
-### 5. Run the tests
+### 5. Local dashboard (optional)
+
+```sh
+GG=/path/to/gg sh dashboard.sh
+```
+
+Open http://127.0.0.1:8765 (`PORT=9000 sh dashboard.sh` changes the port). Enter a ticket or pick a sample, choose **Scripted** (no key; a fixed script calls the tools, so it tests the gateway path, not model quality) or **Live model** (needs `GROQ_API_KEY` in `.env`), and run it. The page shows the decision and reason, and a trace of the real MCP tool calls: tool name, arguments, the backend's result and duration. The trace is recorded where the agent calls the gateway, not written by the page. Refunds stay simulated.
+
+Boundaries: the server binds `127.0.0.1` only (there is no option to listen elsewhere) and starts the same contained gateway as the terminal demo. The browser never reaches the gateway or raw MCP; it only receives the recorded trace. Requests need a matching Host header (blocks DNS rebinding), a same-origin Origin, JSON, a per-process token and a body under 4 KB; the ticket limits and credential guard from the agent apply; responses are redacted and sent with a strict CSP. The Groq key stays on the server; the page only learns whether live mode is available. One run at a time. Linux only for now, like the contained gateway; Windows and WSL are untested.
+
+### 6. Run the tests
 
 ```sh
 GG=/path/to/gg sh run_tests.sh
 ```
 
-`run_tests.sh` runs 21 offline unit tests (policy boundaries, provider retry and failure handling, argument guard, limits; no gateway, network or key needed), then the gateway integration test and the offline demo. Run `sh agent/preflight.sh` first to check Linux, `unshare`, `ip`, user namespaces and `gg`.
+`run_tests.sh` runs 21 offline unit tests (policy boundaries, provider retry and failure handling, argument guard, limits; no gateway, network or key needed), then 16 dashboard tests (browser-facing boundaries, plus a real-gateway run), then the gateway integration test and the offline demo. Run `sh agent/preflight.sh` first to check Linux, `unshare`, `ip`, user namespaces and `gg`.
 
 The integration test uses a scripted model, so no key is needed. It proves tool discovery and real tool calls through the gateway. It does not measure model quality.
 
@@ -198,9 +208,11 @@ agent/
   test_unit.py       Offline unit tests
   demo.py            Four-order demo table (live or --offline)
   preflight.sh       Requirements check with a fix line per problem
+dashboard/           Local dashboard: server.py, static page, test_dashboard.py
 docs/                tools/list capture and run logs
 run.sh               Uncontained gateway launcher (opt-in)
 demo.sh              One-command demo
+dashboard.sh         Local dashboard launcher
 run_tests.sh         Unit tests plus integration test
 .env.example         Template for local keys
 ```
