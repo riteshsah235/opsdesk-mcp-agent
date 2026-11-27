@@ -99,7 +99,8 @@ def check_args(args):
     return args
 
 
-def run_ticket(mcp, ticket, chat=groq_chat, max_steps=MAX_STEPS, log=print, max_seconds=MAX_SECONDS, clock=time.monotonic):
+def run_ticket(mcp, ticket, chat=groq_chat, max_steps=MAX_STEPS, log=print, max_seconds=MAX_SECONDS, clock=time.monotonic, trace=None):
+    """trace(event) receives one dict per real tool call: name, args, result, ms, ok."""
     ticket = (ticket or "").strip()
     if not ticket:
         raise AgentError("Empty ticket.")
@@ -128,11 +129,16 @@ def run_ticket(mcp, ticket, chat=groq_chat, max_steps=MAX_STEPS, log=print, max_
         for c in calls:
             name = c["function"]["name"]
             args = {}
+            t0 = time.perf_counter()
+            ok = True
             try:
                 args = check_args(json.loads(c["function"]["arguments"] or "{}"))
                 out = mcp.call(name, args)
             except (ValueError, RuntimeError) as e:
                 out = "ERROR: %s" % e
+                ok = False
+            if trace:
+                trace({"name": name, "args": json.loads(redact(json.dumps(args))), "result": redact(out), "ms": round((time.perf_counter() - t0) * 1000), "ok": ok})
             log("TOOL %s(%s) -> %s" % (name, redact(json.dumps(args)), redact(out)))
             msgs.append({"role": "tool", "tool_call_id": c["id"], "content": redact(out)})
     raise AgentError("Stopped: step limit (%d) reached without a decision." % max_steps)
