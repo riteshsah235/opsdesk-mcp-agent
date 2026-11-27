@@ -53,20 +53,16 @@ Requirements: Linux x86_64 or macOS/Windows per Graftcode docs, Python 3, an LLM
    # edit .env: GROQ_API_KEY (https://console.groq.com/keys), optional GC_PROJECT_KEY
    ```
    Project Key: sign up at https://portal.graftcode.com, Settings > Project keys > Add new key (Personal). Format `username:token`. It is shown once.
-3. **Start the gateway** (terminal 1). Default ports: 80 (service), 81 (Vision + MCP). If those are busy: `GG_ARGS="--port 18080 --httpPort 18081" ./run.sh` and set `MCP_URL=http://localhost:18081/mcp`.
+3. **Run the agent (default, contained).** The gateway starts automatically inside a private Linux network namespace (`unshare -rn`, needs `unshare` and `ip`, Linux only). Groq is called from the host; MCP requests reach the gateway through a generic stdin/stdout relay (`agent/relay.py`), so no gateway port is open on any host network interface.
    ```sh
-   ./run.sh
+   GG=/path/to/gg ./agent/run_agent.sh "Customer Maya Rao asks for a refund on order A1001. Decide."
    ```
-   Open `http://localhost:81/GV` for Graftcode Vision.
-4. **Run the agent** (terminal 2):
+4. **Test** (scripted model, no key needed, same contained gateway):
    ```sh
-   ./agent/run_agent.sh "Customer Maya Rao asks for a refund on order A1001. Decide."
-   ```
-5. **Test** (needs the gateway running; uses a scripted model, no key needed):
-   ```sh
-   MCP_URL=http://localhost:81/mcp python3 agent/test_agent.py
+   GG=/path/to/gg python3 agent/test_agent.py
    ```
    Honest scope: this test proves tool discovery and real tool calls through the gateway. The model is scripted, so it does not test model quality.
+5. **Optional, NOT contained:** `./run.sh` starts the gateway on the host network (default ports 80/81, or `GG_ARGS="--port 18080 --httpPort 18081"`) and listens on all interfaces. Use it only for Graftcode Vision (`http://localhost:81/GV`) or an external MCP client, on a trusted network or behind a firewall. Then set `MCP_URL=http://localhost:81/mcp` for the agent.
 
 You can also point Cursor or Claude Desktop at the endpoint instead of the agent: `{"mcpServers":{"opsdesk":{"url":"http://localhost:81/mcp"}}}` (Claude Desktop needs `npx mcp-remote http://localhost:81/mcp`).
 
@@ -117,8 +113,9 @@ docs/                   tools/list capture, real run log, Vision screenshot
 - `GROQ_API_KEY` goes only in your local `.env` (git-ignored).
 
 ## Containment (what is and is not enforced)
-- `./test_isolated.sh` runs the gateway and `agent/test_agent.py` in a private network namespace (`unshare -rn`). Tested on Linux: the gateway listeners were not visible on the host and the test passed. It has no internet, so it does not call Groq.
-- The full LLM run (`agent/run_agent.sh`) needs both the gateway and internet, so it cannot use that namespace. For it, gg still listens on 0.0.0.0. Not tested here: a container with `-p 127.0.0.1:81:81` publishing only on loopback. Otherwise use a firewall and a trusted network. Do not claim this setup is local-only.
+- `agent/run_agent.sh` and `agent/test_agent.py` use `agent/contained.sh` by default: the gateway (which binds 0.0.0.0) lives in a private network namespace, so nothing on the host network can reach it. Verified on Linux: no gateway listener appeared on the host, the test passed, and two real gpt-oss-20b runs completed through the relay (`docs/contained_run.log`).
+- Needs Linux with unprivileged user namespaces. On macOS/Windows or locked-down hosts this does not work; use a container publishing only on `127.0.0.1` (not tested here) or a firewall.
+- `./run.sh` and `MCP_URL=...` bypass containment and expose an unauthenticated gateway on all interfaces. Do not claim that mode is local-only.
 
 ## Create your own keys (nothing is shared)
 - **Groq (free):** sign in at https://console.groq.com/keys, click Create API Key, copy it once into your local `.env` as `GROQ_API_KEY`. Check your plan limits for `openai/gpt-oss-20b`.
