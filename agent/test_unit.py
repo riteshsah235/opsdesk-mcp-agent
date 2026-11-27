@@ -118,6 +118,15 @@ class Loop(unittest.TestCase):
             self.run_t([tc("get_order", '{"order_id":"A1001"}')] * 3, clock=lambda: next(ticks))
         self.assertIn("time budget", str(c.exception))
 
+    def test_retry_budget_enforced(self):
+        # slow provider: every attempt "takes" 50s on a fake clock; budget 120s must stop retries early
+        os.environ["GROQ_API_KEY"] = "test-key-not-real"; now = [0.0]; clock = lambda: now[0]
+        def opener(req, timeout=0):
+            now[0] += min(50, timeout); raise urllib.error.HTTPError("u", 503, "x", {}, None)
+        with self.assertRaises(agent.AgentError) as c:
+            agent.groq_chat([], [], opener=opener, sleep=lambda s: now.__setitem__(0, now[0] + s), deadline=120.0, clock=clock)
+        self.assertIn("time budget", str(c.exception)); self.assertLessEqual(now[0], 125)
+
     def test_redact(self):
         self.assertNotIn("gsk_", agent.redact("k=gsk_" + "c" * 30))
         self.assertEqual(agent.redact("A1001 | Maya Rao | $79"), "A1001 | Maya Rao | $79")
